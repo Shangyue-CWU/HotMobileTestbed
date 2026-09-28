@@ -1,0 +1,86 @@
+Rescue-lane testbed report: /home/ubuntu/l4s-rescue-testbed/results/quick_0928_1552
+host l4s-tb  kernel 7.0.0-31-generic
+
+===== sysctl (srv) at start =====
+net.ipv4.tcp_ecn = 2
+net.ipv4.tcp_early_retrans = 3
+net.ipv4.tcp_recovery = 1
+net.ipv4.tcp_slow_start_after_idle = 1
+
+
+===== bottleneck qdisc at start =====
+qdisc htb 1: root refcnt 5 r2q 10 default 0x10 direct_packets_stat 0 direct_qlen 1000
+qdisc dualpi2 20: parent 1:10 limit 10000p memlimit 30280000B target 15ms tupdate 16ms alpha 0.156250 beta 3.195312 step_thresh 1ms min_qlen_step 0p coupling_factor 2 drop_on_overload drop_dequeue classic_protection 10% l4s_ect split_gso
+
+
+===== selftest_dualpi2.txt =====
+leaf qdisc: dualpi2
+  classic  ecn_negotiated(ss)=False L-queue packets=1  CE marks=0 drops=1  changed stats: {"bytes": 3137200, "packets": 2078, "drops": 1, "pkts_in_c": 2078, "pkts_in_l": 1, "maxq": 80, "max_memory_used": 194088}
+           ss: ESTAB 0 0 10.0.2.1:51142 10.0.1.1:5001 cubic wscale:10,10 rto:231 rtt:30.258/11.384 ato:40 mss:1448 pmtu:1500 rcvmss:1448 advmss:1448 cwnd:10 bytes_sent:8 bytes_acked:9 bytes_received:3000000 segs_out:1827 segs_in:2075 data_segs_out:1 data_segs_in:2073 send 3828409bps lastsnd:678 lastrcv:15 lastack:15 pacing_rate 7656752bps delivery_rate 384232bps delivered:2 app_limited busy:30ms rcv_rtt:30 rcv_s
+  ecn      ecn_negotiated(ss)=False L-queue packets=0  CE marks=1 drops=0  changed stats: {"bytes": 3137184, "packets": 2078, "pkts_in_c": 2078, "maxq": 15, "ecn_mark": 1, "max_memory_used": 36120}
+           ss: ESTAB 0 0 10.0.2.1:40544 10.0.1.2:5001 cubic wscale:10,10 rto:257 rtt:56.656/30.222 ato:40 mss:1448 pmtu:1500 rcvmss:1448 advmss:1448 cwnd:10 bytes_sent:8 bytes_acked:9 bytes_received:3000000 segs_out:1300 segs_in:2075 data_segs_out:1 data_segs_in:2073 send 2044620bps lastsnd:636 lastrcv:16 lastack:16 pacing_rate 4089208bps delivery_rate 384032bps delivered:2 app_limited busy:30ms rcv_rtt:39.413 r
+  l4s      ecn_negotiated(ss)=False L-queue packets=2074  CE marks=88 drops=0  changed stats: {"bytes": 3137048, "packets": 2076, "pkts_in_c": 2, "pkts_in_l": 2074, "ecn_mark": 44, "step_mark": 44}
+           ss: ESTAB 0 0 10.0.2.1:60768 10.0.1.3:5003 dctcp wscale:10,10 rto:231 rtt:30.131/11.302 ato:40 mss:1448 pmtu:1500 rcvmss:1448 advmss:1448 cwnd:10 bytes_sent:8 bytes_acked:9 bytes_received:3000000 segs_out:1059 segs_in:2074 data_segs_out:1 data_segs_in:2072 dctcp:(ce_state:0,alpha:0,ab_ecn:0,ab_tot:0) send 3844545bps lastsnd:2086 lastrcv:16 lastack:16 pacing_rate 7688896bps delivery_rate 384552bps deli
+expected: classic -> no ECN, no L packets; ecn -> ECN, no L packets; l4s -> ECN and L packets > 0
+
+
+===== summary.md =====
+(missing)
+
+
+===== checks: dualpi2_step.jsonl =====
+trials: 60
+TLP setting -> effective sysctls (trials):
+  tlp=False {"net.ipv4.tcp_early_retrans": "0", "net.ipv4.tcp_recovery": "0"}  (30)
+  tlp=True  {"net.ipv4.tcp_early_retrans": "3", "net.ipv4.tcp_recovery": "1"}  (30)
+flows_active (want 6): {6: 60}
+failures: 0
+
+
+===== queue monitor: dualpi2_step.qmon.jsonl =====
+samples: 28902
+keys: backlog, bytes, credit, delay_c, delay_l, drops, ecn_mark, handle, kind, max_memory_used, maxq, memory_limit, memory_used, options, overlimits, packets, parent, pkts_in_c, pkts_in_l, prob, qlen, requeues, step_mark
+delay_c (raw units): p50 12555  p90 22373  p99 140776  max 206401
+delay_l (raw units): p50 0  p90 0  p99 0  max 11972
+sample with the largest delay_c:
+{
+ "kind": "dualpi2",
+ "handle": "20:",
+ "parent": "1:10",
+ "options": {
+  "limit": 10000,
+  "memory-limit": 30280000,
+  "target": 15000,
+  "tupdate": 16000,
+  "alpha": 0.15625,
+  "beta": 3.19531,
+  "step-thresh-us": 1000,
+  "min-qlen-step": 0,
+  "coupling": 2,
+  "drop-overload": "drop",
+  "drop-early": "drop-dequeue",
+  "c-protection": 10,
+  "ecn-mask": "l4s-ect",
+  "split-gso": null
+ },
+ "bytes": 1694179590,
+ "packets": 1119779,
+ "drops": 14569,
+ "overlimits": 0,
+ "requeues": 0,
+ "backlog": 177138,
+ "qlen": 117,
+ "prob": 0.875115,
+ "delay_c": 206401,
+ "delay_l": 0,
+ "pkts_in_c": 1131692,
+ "pkts_in_l": 2773,
+ "maxq": 255,
+ "ecn_mark": 680,
+ "step_mark": 306,
+ "credit": -69760,
+ "memory_used": 281736,
+ "max_memory_used": 616448,
+ "memory_limit": 30280000
+}
+
