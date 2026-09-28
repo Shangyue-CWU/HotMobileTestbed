@@ -185,6 +185,8 @@ def main():
     p.add_argument("--out", default="figs")
     a = p.parse_args()
     os.makedirs(a.out, exist_ok=True)
+    # run_all.sh passes "$OUT"/*.jsonl, which also matches the queue-monitor logs: keep trial files only
+    a.results = [p for p in a.results if not p.endswith(".qmon.jsonl")]
     rows = load(a.results)
     bad = [r for r in rows if "flows_active" in r and r["flows_active"] != r["bg"] + 1]
     if bad:

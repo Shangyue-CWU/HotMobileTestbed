@@ -413,7 +413,7 @@ def cmd_selftest(a):
             diffs = {k: after[k] - before.get(k, 0) for k in after
                      if isinstance(after[k], (int, float)) and after[k] != before.get(k, 0)}
             l_pkts = diffs.get("pkts_in_l", 0)
-            marked = diffs.get("ecn_mark", 0) + diffs.get("step_mark", 0)
+            marked = diffs.get("ecn_mark", 0)          # step_mark is a subset of ecn_mark
             print(f"  {lane:8s} ecn_negotiated(ss)={ecn!s:5s} L-queue packets={l_pkts}  "
                   f"CE marks={marked} drops={diffs.get('drops', 0)}  changed stats: {json.dumps(diffs)}")
             print(f"           ss: {ss[:400] or '(ss printed nothing)'}")
