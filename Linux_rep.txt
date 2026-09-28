@@ -1,3 +1,18 @@
-multipass find
-find failed: The client is not authenticated with the Multipass service.
-Please use 'multipass authenticate' before proceeding.
+~/Desktop/HotMobileTestbed$ ./vm.sh up
+Launched: l4s-tb
+code pushed to l4s-tb:/home/ubuntu/l4s-rescue-testbed
+7.0.0-31-generic
+tc utility, iproute2-6.19.0, libbpf 1.6.3
+L4S rescue-lane testbed preflight
+  [ok]   running as root
+  [ok]   kernel 7.0.0-31-generic (>= 6.17, DualPI2 in mainline)
+  [ok]   tc + kernel support dualpi2
+  [ok]   dctcp available
+  [ok]   cubic available
+  [ok]   nft present
+  [ok]   ethtool present
+  [ok]   ss present
+  [ok]   python3 3.14.4
+  [ok]   matplotlib (for analyze.py)
+
+preflight passed
