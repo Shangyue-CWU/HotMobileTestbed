@@ -119,9 +119,14 @@ def set_tlp(on):
     return got
 
 
+def norm(q):
+    """tc -j spells DualPI2 stats with hyphens (pkts-in-l, delay-c, ...); use underscores throughout."""
+    return {k.replace("-", "_"): v for k, v in q.items()} if q else q
+
+
 def leaf_qdisc():
     out = in_ns("rtr", "tc", "-s", "-j", "qdisc", "show", "dev", DEV).stdout
-    return next((q for q in json.loads(out) if q.get("kind") != "htb"), {})
+    return norm(next((q for q in json.loads(out) if q.get("kind") != "htb"), {}))
 
 
 def spawn(ns, *args, log=os.devnull):
@@ -201,7 +206,7 @@ def cmd_qmon(a):
             t = time.time()
             r = sh(["tc", "-s", "-j", "qdisc", "show", "dev", a.dev], check=False)
             try:
-                leaf = next((q for q in json.loads(r.stdout) if q.get("kind") != "htb"), None)
+                leaf = norm(next((q for q in json.loads(r.stdout) if q.get("kind") != "htb"), None))
             except (ValueError, StopIteration):
                 leaf = None
             f.write(json.dumps({"t": t, "q": leaf}) + "\n")
@@ -399,15 +404,19 @@ def cmd_selftest(a):
             c = Conn(lane, timeout=5)
             c.fetch(3_000_000, time.time() + 20)
             ip = LANES[lane][0]
-            ss = sh(["ss", "-tniH", "dst", ip], check=False).stdout
-            ecn = " ecn" in f" {ss}" or "ecnseen" in ss
+            r = sh(["ss", "-tniH", "dst", ip], check=False)
+            ss = " ".join((r.stdout + r.stderr).split())
+            toks = ss.split()
+            ecn = any(t in ("ecn", "ecnseen") or t.startswith("accecn") for t in toks)
             c.close()
             after = leaf_qdisc()
             diffs = {k: after[k] - before.get(k, 0) for k in after
                      if isinstance(after[k], (int, float)) and after[k] != before.get(k, 0)}
-            l_pkts = next((v for k, v in diffs.items() if k in ("pkts_in_l", "l_packets")), None)
-            print(f"  {lane:8s} ecn_negotiated={ecn!s:5s} L-queue packets={l_pkts}  "
-                  f"changed stats: {json.dumps(diffs)}")
+            l_pkts = diffs.get("pkts_in_l", 0)
+            marked = diffs.get("ecn_mark", 0) + diffs.get("step_mark", 0)
+            print(f"  {lane:8s} ecn_negotiated(ss)={ecn!s:5s} L-queue packets={l_pkts}  "
+                  f"CE marks={marked} drops={diffs.get('drops', 0)}  changed stats: {json.dumps(diffs)}")
+            print(f"           ss: {ss[:400] or '(ss printed nothing)'}")
         print("expected: classic -> no ECN, no L packets; ecn -> ECN, no L packets; "
               "l4s -> ECN and L packets > 0")
     finally:

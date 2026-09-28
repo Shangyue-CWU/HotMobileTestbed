@@ -116,7 +116,17 @@ The paper figures are built elsewhere (`../figures/from_testbed.py` converts the
 - **Sep 28, `vm.sh up` failed with "instance 'l4s-tb' does not exist".** Cause: the cloud-init file was made with `mktemp` in `/tmp`, which snap multipass cannot see (snaps have a private `/tmp`), so `multipass launch` failed before the VM existed. The file is now `vm-cloud-init.yaml` in the repo (must be under `$HOME`). `push`/`shell`/`pull` now stop with a clear message if the VM does not exist, and `up` reuses an existing VM.
 - **Sep 28, VM works.** After the fix and a one-time `multipass authenticate`, `./vm.sh up` launched `l4s-tb`: kernel 7.0.0-31-generic, iproute2 6.19.0, Python 3.14.4, preflight passed on every line (dualpi2, dctcp, nft, matplotlib).
 - **Sep 28, results transport.** `results/` is git-ignored and lives inside the VM until pulled, so the user saw an empty host folder. Added `report.py` (run by `run_all.sh`) and `vm.sh selftest|quick|full`, which run from the host, pull automatically and write the `Linux_*.txt` files above. To read results on the Mac: `git pull` in this repo, then read those files.
-- **Not yet run on Linux.** Nothing about DualPI2 behavior, ECN negotiation or steering has been observed yet.
+- **Sep 28, first self-test in the VM (`Linux_selftest.txt`).** Steering and ECN work, judged from the DualPI2 counters of one 3 MB fetch per lane:
+
+  | Lane | pkts in C | pkts in L | CE marks | drops |
+  |---|---|---|---|---|
+  | classic | 2078 | 1 | 0 | 3 |
+  | ecn | 2078 | 0 | 2 | 0 |
+  | l4s | 2 | 2074 | 66 (all step) | 0 |
+
+  The 2 C packets on the l4s lane are the Not-ECT handshake packets, as intended by the `ip ecn != not-ect` rule. The 1 L packet during the classic fetch is unexplained but negligible (first connection on a fresh topology). Qdisc config matches the plan (target 15 ms, step 1 ms, coupling 2, HTB burst 6250 B = 1 ms). The HTB "quantum is big" warning is harmless with a single class.
+  Two reader bugs found and fixed: (1) `tc -j` spells DualPI2 stats with hyphens (`pkts-in-l`, `ecn-mark`, and presumably `delay-c`/`delay-l`), so selftest printed `L-queue packets=None` and the queue plot / Fig. 3 converter would have found no delay data; `tb.py` now normalizes keys to underscores (`norm()`), and analyze.py, report.py and from_testbed.py accept both spellings. (2) The `ss` ECN check printed False for all three lanes, contradicted by the counters (marks without drops); selftest now prints the raw `ss` line and CE marks/drops so the cause is visible. Delay units still unverified (assumed µs).
+- **Not yet run on Linux** (rescue trials). Nothing about DualPI2 behavior, ECN negotiation or steering has been observed yet.
 
 ## 7. Things to verify on the first Linux run
 

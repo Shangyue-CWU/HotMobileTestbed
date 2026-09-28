@@ -74,7 +74,7 @@ def main():
 
         q = p[:-len(".jsonl")] + ".qmon.jsonl"
         if os.path.exists(q):
-            qs = [s.get("q") or {} for s in load(q)]
+            qs = [{k.replace("-", "_"): v for k, v in (s.get("q") or {}).items()} for s in load(q)]
             qs = [s for s in qs if s]
             body = [f"samples: {len(qs)}"]
             if qs:

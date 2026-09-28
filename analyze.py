@@ -123,6 +123,7 @@ def queue_delays(q):
     """(classic ms, L4S ms) from one dualpi2 stats object, else backlog-derived single value."""
     if not q:
         return None
+    q = {k.replace("-", "_"): v for k, v in q.items()}    # older qmon files kept tc's hyphens
     if "delay_c" in q:
         return q["delay_c"] / 1000.0, q.get("delay_l", 0) / 1000.0
     return None
