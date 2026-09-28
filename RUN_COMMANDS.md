@@ -44,9 +44,22 @@ Ubuntu 26.04 has kernel 7.0 and iproute2 6.19, so it has dualpi2 in both and nee
 git pull                        # vm.sh arrived in the "Linux feedback" commit
 ls -l /dev/kvm                  # must exist; if not, enable VT-x/AMD-V in the BIOS (multipass needs KVM)
 sudo snap install multipass     # once
+sudo multipass set local.passphrase   # once, only if multipass says "client is not authenticated"
+multipass authenticate                # once, same passphrase, as your normal user (no sudo)
 ./vm.sh up                      # 26.04 VM, 4 vCPU / 8 GB / 20 GB; installs packages, copies the code, runs preflight
-./vm.sh shell                   # code is in ~/l4s-rescue-testbed; continue with step 3 there
 ```
+
+Then run everything **from the host**. Each command copies the code into the VM, runs there, copies the results back, and leaves a text file in this folder to commit and push:
+
+```bash
+./vm.sh selftest                # ~1 min   -> Linux_selftest.txt
+tmux new -s l4s                 # for the runs below: closing the terminal stops the run
+./vm.sh quick                   # ~15 min  -> Linux_results_quick_<MMDD_HHMM>.txt (+ Linux_run_*.log, results/quick_*/)
+./vm.sh full                    # ~3.5 h   -> Linux_results_full_<MMDD_HHMM>.txt  (only after quick looks right)
+git add Linux_*.txt Linux_run_*.log && git commit -m "testbed results" && git push
+```
+
+Results live inside the VM until they are copied back: `results/` on the host stays empty after `vm.sh up`, and after `vm.sh shell` runs until `./vm.sh pull`. Steps 3 to 5 below describe the same runs done by hand inside `./vm.sh shell`.
 
 - After changing code on the host: `./vm.sh push`.
 - To copy results back to `./results/` on the host: `./vm.sh pull`. This replaces the rsync in step 7.

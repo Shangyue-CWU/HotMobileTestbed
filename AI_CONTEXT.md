@@ -82,7 +82,8 @@ Trials are shuffled with a fixed seed.
 | File | Purpose |
 |---|---|
 | `preflight.sh` | Checks root, kernel >= 6.17, dualpi2 support, dctcp, nft/iptables, tools |
-| `vm.sh` | Host-side helper: Ubuntu 26.04 multipass VM for hosts without dualpi2 (`up` / `push` / `shell` / `pull` / `delete`) |
+| `vm.sh` | Host-side helper: Ubuntu 26.04 multipass VM for hosts without dualpi2 (`up` / `selftest` / `quick` / `full` / `push` / `shell` / `pull` / `delete`); run commands write `Linux_selftest.txt`, `Linux_results_<name>.txt` and `Linux_run_<name>.log` in the repo root for committing |
+| `report.py` | One plain-text report per run (`results/<name>/report.txt`): self-test, summary, TLP read-back, flows_active, failures, DualPI2 stats keys and raw delay values, child-process logs |
 | `topo.sh` | `up` / `down` / `show` for the namespaces and qdiscs (env: `AQM`, `RATE`, `RTT_MS`, `FIFO_MS`) |
 | `tb.py` | `serve` (srv ns), `qmon` (rtr ns, polls `tc -s -j qdisc` every 20 ms), `selftest` and `rescue` (cli ns; they spawn serve/qmon) |
 | `run_all.sh` | Full campaign (DualPI2 step, DualPI2 onset, FIFO step), or `QUICK=1` smoke run |
@@ -113,6 +114,8 @@ The paper figures are built elsewhere (`../figures/from_testbed.py` converts the
 - **Sep 28, loopback check on macOS** (Linux-only calls stubbed out): all five variants and both events completed, cross traffic started, and rate changes fired in order.
 - **Sep 28, local Linux host has no DualPI2.** The host is the CUDA box: Ubuntu 24.04, kernel 6.8.0-106, iproute2 6.1, NVIDIA 550 via DKMS. It has no `sch_dualpi2`, and its `tc` does not know `dualpi2`. The kernel is not swapped (NVIDIA DKMS). Instead, `vm.sh` runs the testbed in an Ubuntu 26.04 VM (kernel 7.0, iproute2 6.19). `preflight.sh` now says whether the kernel or `tc` is missing dualpi2. The AQM is unchanged: do not substitute fq_pie, cake or similar for dualpi2.
 - **Sep 28, `vm.sh up` failed with "instance 'l4s-tb' does not exist".** Cause: the cloud-init file was made with `mktemp` in `/tmp`, which snap multipass cannot see (snaps have a private `/tmp`), so `multipass launch` failed before the VM existed. The file is now `vm-cloud-init.yaml` in the repo (must be under `$HOME`). `push`/`shell`/`pull` now stop with a clear message if the VM does not exist, and `up` reuses an existing VM.
+- **Sep 28, VM works.** After the fix and a one-time `multipass authenticate`, `./vm.sh up` launched `l4s-tb`: kernel 7.0.0-31-generic, iproute2 6.19.0, Python 3.14.4, preflight passed on every line (dualpi2, dctcp, nft, matplotlib).
+- **Sep 28, results transport.** `results/` is git-ignored and lives inside the VM until pulled, so the user saw an empty host folder. Added `report.py` (run by `run_all.sh`) and `vm.sh selftest|quick|full`, which run from the host, pull automatically and write the `Linux_*.txt` files above. To read results on the Mac: `git pull` in this repo, then read those files.
 - **Not yet run on Linux.** Nothing about DualPI2 behavior, ECN negotiation or steering has been observed yet.
 
 ## 7. Things to verify on the first Linux run

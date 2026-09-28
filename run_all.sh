@@ -27,4 +27,5 @@ else
 fi
 
 python3 analyze.py "$OUT"/*.jsonl --out "$OUT/figs" || true
-echo "results in $OUT"
+python3 report.py "$OUT" >/dev/null || true
+echo "results in $OUT (text report: $OUT/report.txt)"

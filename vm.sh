@@ -5,11 +5,18 @@
 #
 # One-time on the host:  sudo snap install multipass
 #
-#   ./vm.sh up       create the VM, install packages, push the code, run preflight
-#   ./vm.sh push     copy the current code into the VM (results/ is not touched)
-#   ./vm.sh shell    open a shell in the VM (code in ~/l4s-rescue-testbed)
-#   ./vm.sh pull     copy results/ and results_*.log from the VM into ./results/
-#   ./vm.sh delete   delete the VM
+#   ./vm.sh up        create the VM, install packages, push the code, run preflight
+#   ./vm.sh selftest  run the self-test in the VM        -> ./Linux_selftest.txt
+#   ./vm.sh quick     QUICK=1 run in the VM (~15 min)    -> ./Linux_results_quick_<MMDD_HHMM>.txt
+#   ./vm.sh full      full run in the VM (~3.5 h)        -> ./Linux_results_full_<MMDD_HHMM>.txt
+#   ./vm.sh push      copy the current code into the VM (results/ is not touched)
+#   ./vm.sh shell     open a shell in the VM (code in ~/l4s-rescue-testbed)
+#   ./vm.sh pull      copy results/ and results_*.log from the VM into ./results/
+#   ./vm.sh delete    delete the VM
+#
+# selftest/quick/full push the code first, stream the output here, and copy the results back to
+# ./results/<name>/ on the host. The Linux_*.txt files are NOT git-ignored: commit and push them.
+# Run quick/full inside tmux on the host: closing the terminal stops the run in the VM.
 #
 # env: VM (name, default l4s-tb), IMAGE (default 26.04), CPUS (4), MEM (8G), DISK (20G)
 set -euo pipefail
@@ -28,7 +35,7 @@ push() {
     multipass exec "$VM" -- mkdir -p "$DIR"
     tar c --exclude=results --exclude=__pycache__ --exclude=.git --exclude='results_*.log' . \
         | multipass exec "$VM" -- tar x -C "$DIR"
-    multipass exec "$VM" -- bash -c "chmod +x $DIR/*.sh $DIR/tb.py $DIR/analyze.py"
+    multipass exec "$VM" -- bash -c "chmod +x $DIR/*.sh $DIR/*.py"
     echo "code pushed to $VM:$DIR"
 }
 
@@ -69,11 +76,39 @@ pull() {
     echo "results copied to ./results/"
 }
 
+selftest() {
+    push
+    multipass exec "$VM" -- sudo bash -c \
+        "cd $DIR && ./topo.sh up && ./topo.sh show && ip netns exec cli python3 tb.py selftest; ./topo.sh down" \
+        2>&1 | tee Linux_selftest.txt || true
+    echo "self-test output saved to ./Linux_selftest.txt"
+}
+
+campaign() {  # quick | full
+    local kind=$1 name
+    name="${kind}_$(date +%m%d_%H%M)"            # new OUT every time: results files are appended
+    local envs="OUT=results/$name"
+    [ "$kind" = quick ] && envs="QUICK=1 $envs"
+    push
+    multipass exec "$VM" -- sudo bash -c "cd $DIR && env $envs ./run_all.sh" 2>&1 \
+        | tee "Linux_run_$name.log" || echo "run_all.sh exited with an error; copying what exists" >&2
+    pull
+    if [ -f "results/$name/report.txt" ]; then
+        cp "results/$name/report.txt" "Linux_results_$name.txt"
+        echo "report: ./Linux_results_$name.txt   raw data: ./results/$name/   console log: ./Linux_run_$name.log"
+    else
+        echo "no report.txt in results/$name (see ./Linux_run_$name.log)" >&2
+    fi
+}
+
 case ${1:-} in
     up) up ;;
+    selftest) need_vm; selftest ;;
+    quick) need_vm; campaign quick ;;
+    full) need_vm; campaign full ;;
     push) need_vm; push ;;
     shell) need_vm; multipass shell "$VM" ;;
     pull) need_vm; pull ;;
     delete) multipass delete --purge "$VM" ;;
-    *) sed -n '2,15p' "$0" >&2; exit 1 ;;
+    *) sed -n '2,21p' "$0" >&2; exit 1 ;;
 esac
