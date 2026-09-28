@@ -22,7 +22,14 @@ ip -n l4s-pf link add d0 type dummy && ip -n l4s-pf link set d0 up
 if tc -n l4s-pf qdisc add dev d0 root dualpi2 2>/dev/null; then
     ok "tc + kernel support dualpi2"
 else
-    bad "cannot create a dualpi2 qdisc (kernel module sch_dualpi2 or iproute2 too old)"
+    bad "cannot create a dualpi2 qdisc"
+    if ! modinfo sch_dualpi2 >/dev/null 2>&1 && ! grep -qs sch_dualpi2 "/lib/modules/$K/modules.builtin"; then
+        warn "  kernel $K has no sch_dualpi2: use a 6.17+ kernel, or run in the VM (./vm.sh up, see RUN_COMMANDS.md step 1)"
+    fi
+    TC_HELP=$(tc qdisc add dev lo root dualpi2 help 2>&1)   # tc exits non-zero here; pipefail would hide a grep match
+    if grep -q 'Unknown qdisc' <<<"$TC_HELP"; then
+        warn "  $(tc -V 2>&1 | head -1) does not know dualpi2: need iproute2 >= 6.17"
+    fi
 fi
 ip netns del l4s-pf 2>/dev/null
 

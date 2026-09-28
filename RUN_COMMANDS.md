@@ -36,6 +36,22 @@ The testbed needs **6.17 or later** (DualPI2 entered mainline in 6.17).
 - 6.17 or later: go to step 2.
 - Older: do not swap the kernel on the CUDA training machine, because the NVIDIA driver may not build against it. Use a VM instead, for example an Ubuntu 26.04 LTS guest under KVM or multipass (4 vCPU, 8 GB, 20 GB disk is plenty). Run `uname -r` inside the VM to confirm 6.17+. All three namespaces live inside the VM, so nothing else changes.
 
+### 1b. VM with `vm.sh` (CUDA box: kernel 6.8, iproute2 6.1, no dualpi2)
+
+Ubuntu 26.04 has kernel 7.0 and iproute2 6.19, so it has dualpi2 in both and needs no source build. From the repo on the host:
+
+```bash
+sudo snap install multipass     # once
+./vm.sh up                      # 26.04 VM, 4 vCPU / 8 GB / 20 GB; installs packages, copies the code, runs preflight
+./vm.sh shell                   # code is in ~/l4s-rescue-testbed; continue with step 3 there
+```
+
+- After changing code on the host: `./vm.sh push`.
+- To copy results back to `./results/` on the host: `./vm.sh pull`. This replaces the rsync in step 7.
+- To remove the VM: `./vm.sh delete`.
+
+Step 2 is done by `vm.sh up`. If its preflight fails on a missing module, run `sudo apt install linux-modules-extra-$(uname -r)` inside the VM.
+
 ## 2. On the Linux box: install and preflight
 
 ```bash

@@ -82,6 +82,7 @@ Trials are shuffled with a fixed seed.
 | File | Purpose |
 |---|---|
 | `preflight.sh` | Checks root, kernel >= 6.17, dualpi2 support, dctcp, nft/iptables, tools |
+| `vm.sh` | Host-side helper: Ubuntu 26.04 multipass VM for hosts without dualpi2 (`up` / `push` / `shell` / `pull` / `delete`) |
 | `topo.sh` | `up` / `down` / `show` for the namespaces and qdiscs (env: `AQM`, `RATE`, `RTT_MS`, `FIFO_MS`) |
 | `tb.py` | `serve` (srv ns), `qmon` (rtr ns, polls `tc -s -j qdisc` every 20 ms), `selftest` and `rescue` (cli ns; they spawn serve/qmon) |
 | `run_all.sh` | Full campaign (DualPI2 step, DualPI2 onset, FIFO step), or `QUICK=1` smoke run |
@@ -110,6 +111,7 @@ The paper figures are built elsewhere (`../figures/from_testbed.py` converts the
   - `preflight.sh` loads `dummy` and `sch_dualpi2`.
   - `topo.sh show` prints the nft ruleset.
 - **Sep 28, loopback check on macOS** (Linux-only calls stubbed out): all five variants and both events completed, cross traffic started, and rate changes fired in order.
+- **Sep 28, local Linux host has no DualPI2.** The host is the CUDA box: Ubuntu 24.04, kernel 6.8.0-106, iproute2 6.1, NVIDIA 550 via DKMS. It has no `sch_dualpi2`, and its `tc` does not know `dualpi2`. The kernel is not swapped (NVIDIA DKMS). Instead, `vm.sh` runs the testbed in an Ubuntu 26.04 VM (kernel 7.0, iproute2 6.19). `preflight.sh` now says whether the kernel or `tc` is missing dualpi2. The AQM is unchanged: do not substitute fq_pie, cake or similar for dualpi2.
 - **Not yet run on Linux.** Nothing about DualPI2 behavior, ECN negotiation or steering has been observed yet.
 
 ## 7. Things to verify on the first Linux run
@@ -135,7 +137,7 @@ The paper figures are built elsewhere (`../figures/from_testbed.py` converts the
 - **Keep variant names stable.** `../figures/from_testbed.py` maps `l4s`, `ecn`, `classic`, `fresh`, `abandon` to the paper's policy names.
 - **Do not add a canary** or keep-alive traffic to the lane. The paper discussion found it adds overhead without reducing stalls.
 - **The PI is sensitive to AI-written prose.** Report results as numbers and tables, not polished text.
-- **Experiments run on the user's Linux machine,** kernel 6.17 or later, as root. Do not try to run them on the user's Mac.
+- **Experiments run on the user's Linux machine,** kernel 6.17 or later, as root: on the CUDA box that means inside the `vm.sh` VM, not on the host. Do not try to run them on the user's Mac.
 
 ## 9. Known limitations (state them whenever results are quoted)
 

@@ -35,6 +35,7 @@ There is no canary: the lane is warmed once and then left idle, as Linux would l
 - Kernel: Linux 6.17 or later (DualPI2 is in mainline from 6.17), and an iproute2 that supports `dualpi2`.
 - Tools: the `tcp_dctcp` module, `nft` or `iptables`, `ethtool`, `ss`, and Python 3.8 or later.
 - Optional: `matplotlib`, for the figures.
+- Host without dualpi2 (for example the CUDA box, kernel 6.8): run everything in an Ubuntu 26.04 VM with `./vm.sh up`. See `RUN_COMMANDS.md` step 1b.
 
 Check with:
 
