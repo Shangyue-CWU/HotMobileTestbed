@@ -41,6 +41,8 @@ The testbed needs **6.17 or later** (DualPI2 entered mainline in 6.17).
 Ubuntu 26.04 has kernel 7.0 and iproute2 6.19, so it has dualpi2 in both and needs no source build. From the repo on the host:
 
 ```bash
+git pull                        # vm.sh arrived in the "Linux feedback" commit
+ls -l /dev/kvm                  # must exist; if not, enable VT-x/AMD-V in the BIOS (multipass needs KVM)
 sudo snap install multipass     # once
 ./vm.sh up                      # 26.04 VM, 4 vCPU / 8 GB / 20 GB; installs packages, copies the code, runs preflight
 ./vm.sh shell                   # code is in ~/l4s-rescue-testbed; continue with step 3 there
@@ -49,6 +51,8 @@ sudo snap install multipass     # once
 - After changing code on the host: `./vm.sh push`.
 - To copy results back to `./results/` on the host: `./vm.sh pull`. This replaces the rsync in step 7.
 - To remove the VM: `./vm.sh delete`.
+
+Run `vm.sh` as your normal user, not with sudo. If `multipass launch` says the image is unknown, `multipass find` lists the available names; pass one with `IMAGE=<name> ./vm.sh up`.
 
 Step 2 is done by `vm.sh up`. If its preflight fails on a missing module, run `sudo apt install linux-modules-extra-$(uname -r)` inside the VM.
 

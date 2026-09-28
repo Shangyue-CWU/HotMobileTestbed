@@ -32,16 +32,29 @@ push() {
     echo "code pushed to $VM:$DIR"
 }
 
+exists() { multipass info "$VM" >/dev/null 2>&1; }
+
+need_vm() {
+    exists || { echo "VM '$VM' does not exist yet: run ./vm.sh up and check its output for the launch error" >&2; exit 1; }
+}
+
 up() {
-    local ci; ci=$(mktemp); trap 'rm -f "$ci"' RETURN
-    cat >"$ci" <<'EOF'
-#cloud-config
-package_update: true
-packages: [iproute2, nftables, ethtool, python3, python3-matplotlib, tmux]
-runcmd:
-  - apt-get install -y "linux-modules-extra-$(uname -r)" || true
-EOF
-    multipass launch "$IMAGE" --name "$VM" --cpus "$CPUS" --memory "$MEM" --disk "$DISK" --cloud-init "$ci"
+    if exists; then
+        echo "VM '$VM' already exists: reusing it"
+    else
+        # The cloud-init file must be under $HOME: snap multipass has a private /tmp and cannot see the host's.
+        local ci="$PWD/vm-cloud-init.yaml"
+        [ -r "$ci" ] || { echo "missing $ci" >&2; exit 1; }
+        if ! multipass launch "$IMAGE" --name "$VM" --cpus "$CPUS" --memory "$MEM" --disk "$DISK" --cloud-init "$ci"; then
+            echo >&2
+            echo "multipass launch failed. Checks:" >&2
+            echo "  ls -l /dev/kvm                 (must exist: enable VT-x/AMD-V in the BIOS)" >&2
+            echo "  multipass find                 (is '$IMAGE' listed? else IMAGE=<name> ./vm.sh up)" >&2
+            echo "  multipass list                 (a half-created '$VM'? then ./vm.sh delete and retry)" >&2
+            echo "  repo must be under \$HOME       (snap multipass cannot read $ci otherwise)" >&2
+            exit 1
+        fi
+    fi
     multipass exec "$VM" -- cloud-init status --wait >/dev/null || true
     push
     multipass exec "$VM" -- bash -c "uname -r; tc -V"
@@ -58,9 +71,9 @@ pull() {
 
 case ${1:-} in
     up) up ;;
-    push) push ;;
-    shell) multipass shell "$VM" ;;
-    pull) pull ;;
+    push) need_vm; push ;;
+    shell) need_vm; multipass shell "$VM" ;;
+    pull) need_vm; pull ;;
     delete) multipass delete --purge "$VM" ;;
     *) sed -n '2,15p' "$0" >&2; exit 1 ;;
 esac
