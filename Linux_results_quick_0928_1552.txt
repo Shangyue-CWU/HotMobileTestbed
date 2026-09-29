@@ -1,4 +1,4 @@
-Rescue-lane testbed report: /home/ubuntu/l4s-rescue-testbed/results/quick_0928_1552
+Rescue-lane testbed report: /home/ubuntu/Desktop/HotMobileTestbed/results/quick_0928_1552
 host l4s-tb  kernel 7.0.0-31-generic
 
 ===== sysctl (srv) at start =====
@@ -25,7 +25,22 @@ expected: classic -> no ECN, no L packets; ecn -> ECN, no L packets; l4s -> ECN 
 
 
 ===== summary.md =====
-(missing)
+# Rescue-lane testbed summary
+
+## AQM=dualpi2, event=step
+
+| TLP | rescue path | n | fail % | p50 s | p90 s | p99 s | in time <0.5s (95% CI) | in time <1.0s (95% CI) | in time <1.5s (95% CI) | in time <2.0s (95% CI) | retrans/rescue |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| on | L4S lane (DCTCP, L queue) | 6 | 0 | 1.15 | 1.56 | 1.56 | 0% (0%–39%) | 17% (3%–56%) | 83% (44%–97%) | 100% (61%–100%) | 5.50 |
+| on | ECN lane (Cubic, C queue) | 6 | 0 | 0.91 | 1.34 | 1.34 | 0% (0%–39%) | 50% (19%–81%) | 100% (61%–100%) | 100% (61%–100%) | 8.83 |
+| on | Classic lane (Cubic) | 6 | 0 | 1.22 | 1.79 | 1.79 | 0% (0%–39%) | 33% (10%–70%) | 83% (44%–97%) | 100% (61%–100%) | 16.33 |
+| on | New connection | 6 | 0 | 1.10 | 2.14 | 2.14 | 0% (0%–39%) | 33% (10%–70%) | 50% (19%–81%) | 67% (30%–90%) | 10.17 |
+| on | Abandon + refetch | 6 | 0 | 1.33 | 1.84 | 1.84 | 0% (0%–39%) | 17% (3%–56%) | 67% (30%–90%) | 100% (61%–100%) | 14.50 |
+| off | L4S lane (DCTCP, L queue) | 6 | 0 | 1.24 | 1.58 | 1.58 | 0% (0%–39%) | 33% (10%–70%) | 83% (44%–97%) | 100% (61%–100%) | 3.83 |
+| off | ECN lane (Cubic, C queue) | 6 | 0 | 1.02 | 1.56 | 1.56 | 0% (0%–39%) | 33% (10%–70%) | 83% (44%–97%) | 100% (61%–100%) | 10.50 |
+| off | Classic lane (Cubic) | 6 | 0 | 1.06 | 1.71 | 1.71 | 0% (0%–39%) | 17% (3%–56%) | 83% (44%–97%) | 100% (61%–100%) | 15.50 |
+| off | New connection | 6 | 0 | 1.74 | 2.14 | 2.14 | 17% (3%–56%) | 17% (3%–56%) | 33% (10%–70%) | 83% (44%–97%) | 11.83 |
+| off | Abandon + refetch | 6 | 0 | 1.05 | 1.82 | 1.82 | 0% (0%–39%) | 33% (10%–70%) | 83% (44%–97%) | 100% (61%–100%) | 15.67 |
 
 
 ===== checks: dualpi2_step.jsonl =====

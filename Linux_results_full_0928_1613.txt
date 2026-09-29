@@ -1,0 +1,214 @@
+Rescue-lane testbed report: /home/ubuntu/l4s-rescue-testbed/results/full_0928_1613
+host l4s-tb  kernel 7.0.0-31-generic
+
+===== sysctl (srv) at start =====
+net.ipv4.tcp_ecn = 2
+net.ipv4.tcp_early_retrans = 3
+net.ipv4.tcp_recovery = 1
+net.ipv4.tcp_slow_start_after_idle = 1
+
+
+===== bottleneck qdisc at start =====
+qdisc htb 1: root refcnt 5 r2q 10 default 0x10 direct_packets_stat 0 direct_qlen 1000
+qdisc dualpi2 20: parent 1:10 limit 10000p memlimit 30280000B target 15ms tupdate 16ms alpha 0.156250 beta 3.195312 step_thresh 1ms min_qlen_step 0p coupling_factor 2 drop_on_overload drop_dequeue classic_protection 10% l4s_ect split_gso
+
+
+===== selftest_dualpi2.txt =====
+leaf qdisc: dualpi2
+  classic  ecn_negotiated(ss)=False L-queue packets=2  CE marks=0 drops=4  changed stats: {"bytes": 3137176, "packets": 2078, "drops": 4, "pkts_in_c": 2080, "pkts_in_l": 2, "maxq": 98, "max_memory_used": 237432}
+           ss: ESTAB 0 0 10.0.2.1:48902 10.0.1.1:5001 cubic wscale:10,10 rto:231 rtt:30.151/11.32 ato:40 mss:1448 pmtu:1500 rcvmss:1448 advmss:1448 cwnd:10 bytes_sent:8 bytes_acked:9 bytes_received:3000000 segs_out:1291 segs_in:2075 data_segs_out:1 data_segs_in:2073 send 3841995bps lastsnd:666 lastrcv:13 lastack:13 pacing_rate 7683920bps delivery_rate 383456bps delivered:2 app_limited busy:30ms rcv_rtt:30 rcv_sp
+  ecn      ecn_negotiated(ss)=False L-queue packets=0  CE marks=4 drops=0  changed stats: {"bytes": 3137274, "packets": 2079, "pkts_in_c": 2079, "maxq": 14, "ecn_mark": 4, "max_memory_used": 33712}
+           ss: ESTAB 0 0 10.0.2.1:50004 10.0.1.2:5001 cubic wscale:10,10 rto:257 rtt:56.57/30.165 ato:40 mss:1448 pmtu:1500 rcvmss:1448 advmss:1448 cwnd:10 bytes_sent:8 bytes_acked:9 bytes_received:3000000 segs_out:1274 segs_in:2075 data_segs_out:1 data_segs_in:2073 send 2047728bps lastsnd:646 lastrcv:12 lastack:12 pacing_rate 4095456bps delivery_rate 383736bps delivered:2 app_limited busy:30ms rcv_rtt:30 rcv_sp
+  l4s      ecn_negotiated(ss)=False L-queue packets=2074  CE marks=38 drops=0  changed stats: {"bytes": 3136958, "packets": 2075, "pkts_in_c": 1, "pkts_in_l": 2074, "ecn_mark": 38, "step_mark": 38}
+           ss: ESTAB 0 0 10.0.2.1:48434 10.0.1.3:5003 dctcp wscale:10,10 rto:231 rtt:30.097/11.288 ato:40 mss:1448 pmtu:1500 rcvmss:1448 advmss:1448 cwnd:10 bytes_sent:8 bytes_acked:9 bytes_received:3000000 segs_out:1049 segs_in:2074 data_segs_out:1 data_segs_in:2072 dctcp:(ce_state:0,alpha:0,ab_ecn:0,ab_tot:0) send 3848889bps lastsnd:2177 lastrcv:14 lastack:14 pacing_rate 7697680bps delivery_rate 384936bps deli
+expected: classic -> no ECN, no L packets; ecn -> ECN, no L packets; l4s -> ECN and L packets > 0
+
+
+===== summary.md =====
+# Rescue-lane testbed summary
+
+## AQM=dualpi2, event=onset
+
+| TLP | rescue path | n | fail % | p50 s | p90 s | p99 s | in time <0.5s (95% CI) | in time <1.0s (95% CI) | in time <1.5s (95% CI) | in time <2.0s (95% CI) | retrans/rescue |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| on | L4S lane (DCTCP, L queue) | 40 | 0 | 0.49 | 0.55 | 0.61 | 57% (42%–71%) | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 0.00 |
+| on | ECN lane (Cubic, C queue) | 40 | 0 | 0.26 | 0.30 | 0.33 | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 0.00 |
+| on | Classic lane (Cubic) | 40 | 0 | 0.28 | 0.41 | 0.66 | 95% (83%–99%) | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 1.48 |
+| on | New connection | 40 | 0 | 0.29 | 0.47 | 0.63 | 92% (80%–97%) | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 1.02 |
+| on | Abandon + refetch | 40 | 0 | 0.26 | 0.42 | 0.64 | 92% (80%–97%) | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 0.97 |
+| off | L4S lane (DCTCP, L queue) | 40 | 0 | 0.49 | 0.55 | 0.61 | 62% (47%–76%) | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 0.00 |
+| off | ECN lane (Cubic, C queue) | 40 | 0 | 0.28 | 0.35 | 0.48 | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 0.00 |
+| off | Classic lane (Cubic) | 40 | 0 | 0.28 | 0.44 | 0.59 | 95% (83%–99%) | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 1.48 |
+| off | New connection | 40 | 0 | 0.29 | 0.45 | 0.73 | 95% (83%–99%) | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 1.45 |
+| off | Abandon + refetch | 40 | 0 | 0.28 | 0.39 | 0.62 | 98% (87%–100%) | 100% (91%–100%) | 100% (91%–100%) | 100% (91%–100%) | 1.07 |
+
+## AQM=dualpi2, event=step
+
+| TLP | rescue path | n | fail % | p50 s | p90 s | p99 s | in time <0.5s (95% CI) | in time <1.0s (95% CI) | in time <1.5s (95% CI) | in time <2.0s (95% CI) | retrans/rescue |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| on | L4S lane (DCTCP, L queue) | 40 | 0 | 1.21 | 1.42 | 1.50 | 0% (-0%–9%) | 20% (10%–35%) | 98% (87%–100%) | 100% (91%–100%) | 4.92 |
+| on | ECN lane (Cubic, C queue) | 40 | 0 | 0.94 | 1.54 | 2.10 | 8% (3%–20%) | 50% (35%–65%) | 82% (68%–91%) | 98% (87%–100%) | 9.00 |
+| on | Classic lane (Cubic) | 40 | 0 | 1.17 | 1.51 | 2.48 | 2% (0%–13%) | 40% (26%–55%) | 88% (74%–95%) | 98% (87%–100%) | 14.88 |
+| on | New connection | 40 | 0 | 1.31 | 2.07 | 2.63 | 0% (-0%–9%) | 30% (18%–45%) | 68% (52%–80%) | 88% (74%–95%) | 12.93 |
+| on | Abandon + refetch | 40 | 0 | 0.92 | 1.68 | 2.51 | 0% (-0%–9%) | 55% (40%–69%) | 85% (71%–93%) | 98% (87%–100%) | 12.25 |
+| off | L4S lane (DCTCP, L queue) | 40 | 0 | 1.19 | 1.54 | 2.36 | 0% (-0%–9%) | 12% (5%–26%) | 88% (74%–95%) | 98% (87%–100%) | 4.58 |
+| off | ECN lane (Cubic, C queue) | 40 | 0 | 1.04 | 1.42 | 1.64 | 5% (1%–17%) | 48% (33%–63%) | 95% (83%–99%) | 100% (91%–100%) | 10.57 |
+| off | Classic lane (Cubic) | 40 | 0 | 1.10 | 1.80 | 3.67 | 8% (3%–20%) | 42% (29%–58%) | 78% (62%–88%) | 92% (80%–97%) | 16.30 |
+| off | New connection | 40 | 0 | 1.21 | 1.66 | 2.07 | 5% (1%–17%) | 22% (12%–38%) | 80% (65%–90%) | 98% (87%–100%) | 14.93 |
+| off | Abandon + refetch | 40 | 0 | 1.11 | 1.76 | 2.42 | 0% (-0%–9%) | 38% (24%–53%) | 75% (60%–86%) | 95% (83%–99%) | 11.82 |
+
+## AQM=fifo, event=step
+
+| TLP | rescue path | n | fail % | p50 s | p90 s | p99 s | in time <0.5s (95% CI) | in time <1.0s (95% CI) | in time <1.5s (95% CI) | in time <2.0s (95% CI) | retrans/rescue |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| on | L4S lane (DCTCP, L queue) | 40 | 100 | inf | inf | inf | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | - |
+| on | Classic lane (Cubic) | 40 | 100 | inf | inf | inf | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | - |
+| on | Abandon + refetch | 40 | 100 | inf | inf | inf | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | - |
+| off | L4S lane (DCTCP, L queue) | 40 | 100 | inf | inf | inf | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | - |
+| off | Classic lane (Cubic) | 40 | 100 | inf | inf | inf | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | - |
+| off | Abandon + refetch | 40 | 100 | inf | inf | inf | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | 0% (-0%–9%) | - |
+
+
+===== checks: dualpi2_onset.jsonl =====
+trials: 400
+TLP setting -> effective sysctls (trials):
+  tlp=False {"net.ipv4.tcp_early_retrans": "0", "net.ipv4.tcp_recovery": "0"}  (200)
+  tlp=True  {"net.ipv4.tcp_early_retrans": "3", "net.ipv4.tcp_recovery": "1"}  (200)
+flows_active (want 6): {6: 400}
+failures: 0
+
+
+===== queue monitor: dualpi2_onset.qmon.jsonl =====
+samples: 174702
+keys: backlog, bytes, credit, delay_c, delay_l, drops, ecn_mark, handle, kind, max_memory_used, maxq, memory_limit, memory_used, options, overlimits, packets, parent, pkts_in_c, pkts_in_l, prob, qlen, requeues, step_mark
+delay_c (raw units): p50 13183  p90 20535  p99 46798  max 60948
+delay_l (raw units): p50 0  p90 0  p99 0  max 2256
+sample with the largest delay_c:
+{
+ "kind": "dualpi2",
+ "handle": "20:",
+ "parent": "1:10",
+ "options": {
+  "limit": 10000,
+  "memory-limit": 30280000,
+  "target": 15000,
+  "tupdate": 16000,
+  "alpha": 0.15625,
+  "beta": 3.19531,
+  "step-thresh-us": 1000,
+  "min-qlen-step": 0,
+  "coupling": 2,
+  "drop-overload": "drop",
+  "drop-early": "drop-dequeue",
+  "c-protection": 10,
+  "ecn-mask": "l4s-ect",
+  "split-gso": null
+ },
+ "bytes": 7282045182,
+ "packets": 4814467,
+ "drops": 19549,
+ "overlimits": 0,
+ "requeues": 0,
+ "backlog": 360332,
+ "qlen": 238,
+ "prob": 0.23173,
+ "delay_c": 60948,
+ "delay_l": 0,
+ "pkts_in_c": 4829843,
+ "pkts_in_l": 4411,
+ "maxq": 263,
+ "ecn_mark": 769,
+ "step_mark": 316,
+ "credit": -84960,
+ "memory_used": 573104,
+ "max_memory_used": 635712,
+ "memory_limit": 30280000
+}
+
+
+===== checks: dualpi2_step.jsonl =====
+trials: 400
+TLP setting -> effective sysctls (trials):
+  tlp=False {"net.ipv4.tcp_early_retrans": "0", "net.ipv4.tcp_recovery": "0"}  (200)
+  tlp=True  {"net.ipv4.tcp_early_retrans": "3", "net.ipv4.tcp_recovery": "1"}  (200)
+flows_active (want 6): {6: 400}
+failures: 0
+
+
+===== queue monitor: dualpi2_step.qmon.jsonl =====
+samples: 191501
+keys: backlog, bytes, credit, delay_c, delay_l, drops, ecn_mark, handle, kind, max_memory_used, maxq, memory_limit, memory_used, options, overlimits, packets, parent, pkts_in_c, pkts_in_l, prob, qlen, requeues, step_mark
+delay_c (raw units): p50 12674  p90 22524  p99 142238  max 211334
+delay_l (raw units): p50 0  p90 0  p99 0  max 12721
+sample with the largest delay_c:
+{
+ "kind": "dualpi2",
+ "handle": "20:",
+ "parent": "1:10",
+ "options": {
+  "limit": 10000,
+  "memory-limit": 30280000,
+  "target": 15000,
+  "tupdate": 16000,
+  "alpha": 0.15625,
+  "beta": 3.19531,
+  "step-thresh-us": 1000,
+  "min-qlen-step": 0,
+  "coupling": 2,
+  "drop-overload": "drop",
+  "drop-early": "drop-dequeue",
+  "c-protection": 10,
+  "ecn-mask": "l4s-ect",
+  "split-gso": null
+ },
+ "bytes": 14987635756,
+ "packets": 9906022,
+ "drops": 131890,
+ "overlimits": 0,
+ "requeues": 0,
+ "backlog": 198334,
+ "qlen": 131,
+ "prob": 0.910482,
+ "delay_c": 211334,
+ "delay_l": 0,
+ "pkts_in_c": 10028937,
+ "pkts_in_l": 9106,
+ "maxq": 261,
+ "ecn_mark": 6554,
+ "step_mark": 2613,
+ "credit": -129540,
+ "memory_used": 315448,
+ "max_memory_used": 630896,
+ "memory_limit": 30280000
+}
+
+
+===== checks: fifo_step.jsonl =====
+trials: 240
+TLP setting -> effective sysctls (trials):
+  tlp=False {"net.ipv4.tcp_early_retrans": "0", "net.ipv4.tcp_recovery": "0"}  (120)
+  tlp=True  {"net.ipv4.tcp_early_retrans": "3", "net.ipv4.tcp_recovery": "1"}  (120)
+flows_active (want 6): {6: 240}
+failures: 240  {('classic', 'TimeoutError'): 80, ('l4s', 'TimeoutError'): 80, ('abandon', 'TimeoutError'): 80}
+
+
+===== queue monitor: fifo_step.qmon.jsonl =====
+samples: 161993
+keys: backlog, bytes, drops, handle, kind, options, overlimits, packets, parent, qlen, requeues
+sample with the largest delay_c:
+{
+ "kind": "bfifo",
+ "handle": "20:",
+ "parent": "1:10",
+ "options": {
+  "limit": 1562500
+ },
+ "bytes": 96,
+ "packets": 2,
+ "drops": 0,
+ "overlimits": 0,
+ "requeues": 0,
+ "backlog": 0,
+ "qlen": 0
+}
+
