@@ -1,5 +1,14 @@
-git pull && ./vm.sh full
+python3 -c "
+import json
+for f in ['dualpi2_step','dualpi2_onset','fifo_step']:
+    n=hi=0; mb=0
+    for l in open(f'results/full_0928_1613/{f}.qmon.jsonl'):
+        q=json.loads(l).get('q') or {}
+        p=q.get('prob'); b=q.get('backlog', 0)
+        if p is not None: n+=1; hi+=p>=0.5
+        if isinstance(b,(int,float)): mb=max(mb,b)
+    print(f, 'samples', n, 'prob>=0.5', hi, 'max backlog bytes', mb)
+" | tee Linux_qmon_check.txt
 
-python3 analyze.py results/quick_0928_1552/dualpi2_step.jsonl --out results/quick_0928_1552/figs && python3 report.py results/quick_0928_1552 > /dev/null && cp results/quick_0928_1552/report.txt Linux_results_quick_0928_1552.txt 
 
-&& git add Linux_*.txt && git commit -m "quick summary" && git push
+git add -f results/full_0928_1613/dualpi2_step.jsonl results/full_0928_1613/dualpi2_onset.jsonl results/full_0928_1613/fifo_step.jsonl Linux_qmon_check.txt && git commit -m "full-run trial data + qmon check" && git push
